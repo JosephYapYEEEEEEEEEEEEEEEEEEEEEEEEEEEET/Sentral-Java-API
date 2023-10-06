@@ -1,0 +1,47 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'java'
+}
+
+group 'io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    shadow(implementation group: 'com.google.code.gson', name: 'gson', version: '2.10.1')
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+    //implementation 'systems.manifold:manifold-json-rt:2023.1.28'
+
+    // Add manifold to -processorpath for javac
+    // annotationProcessor 'systems.manifold:manifold-json:2023.1.28'
+    // testAnnotationProcessor 'systems.manifold:manifold-json:2023.1.28'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    shadow implementation(group: 'commons-io', name: 'commons-io', version: '2.14.0')
+
+    shadow(implementation 'org.jsoup:jsoup:1.16.1')
+    shadow(implementation "org.jcommander:jcommander:1.83")
+
+}
+
+jar {
+    manifest.attributes([
+            "Main-Class": "io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.Main"
+    ])
+}
+
+test {
+    useJUnitPlatform()
+}
+
+//tasks.withType(JavaCompile) {
+//    // If you DO NOT define a module-info.java file:
+//    options.compilerArgs += ['-Xplugin:Manifold']
+//}

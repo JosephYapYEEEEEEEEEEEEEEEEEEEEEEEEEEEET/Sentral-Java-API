@@ -2,6 +2,7 @@ package io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.NonStaticFetch;
 import org.jsoup.Jsoup;
@@ -10,45 +11,21 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.NodeFilter;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.Fetch.*;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 
 public class Main {
-
-    private static URL url;
-    private static String prf;
-    private static Args args;
-
-    public static class Args {
-        @Parameter(names = "--username", required = true)
-        public String username;
-
-        @Parameter(names = "--password", required = true)
-        public String password;
-
-        @Parameter(names = "--sentralPrefix", description = "The prefix used when fetching info", required = true)
-        public String sentralId;
-    }
-    private static String token;
     public static void main(String... argv) throws IOException {
-        Main.args = new Args();
-        Args args = Main.args;
-        JCommander.newBuilder()
-                .addObject(args)
-                .build()
-                .parse(argv);
-        prf = "https://" + args.sentralId + ".sentral.com.au/";
-        CookieManager manager = new CookieManager();
-        CookieManager.setDefault(manager);
-        url = new URL("https://" + args.sentralId + ".sentral.com.au/portal2/");
-
-        String homeworkUrl = "https://" + args.sentralId + ".sentral.com.au/portal/dashboard/homework";
-        String timetableUrl = "https://" + args.sentralId + ".sentral.com.au/portal/timetable/mytimetable";
+        SentralCred.startGc();
         HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 5383), 0);
      /* server.createContext("/timetable/cyclical", exchange -> {
             Response response = null;
@@ -74,89 +51,129 @@ public class Main {
             exchange.close();
         });
      */ server.createContext("/homework", exchange -> {
-            List<Map<String, String>
-                    > a = new ArrayList<>();
-            {
-                Response join = null;
-                try {
-                    join = getResponse(homeworkUrl);
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
-                String join1 = join.text().join();
-                Document parse = Jsoup.parse(join1);
-                Element elem = parse.getElementsByClass("table table-stripped table-hover table-condensed").get(0);
-                Element thead = elem.getElementsByTag("thead").get(0);
-                List<String> store = new ArrayList<>();
-                for (Element element : thead.getElementsByTag("tr").get(0).getElementsByTag("th")) {
-                    store.add(element.text());
-                }
-                Element tbody = elem.getElementsByTag("tbody").get(0);
-                for (Element element : tbody.getElementsByTag("tr")) {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("Completed", "No");
-                    int i = 0;
-                    for (Element element1 : element.getElementsByTag("td")) {
-                        if (i == 0) {
-                            String a1 = element1.getElementsByTag("a").get(0).attr("data-content");
-                            map.put("Comment", Jsoup.parse(a1).text());
-                        }
-                        map.put(store.get(i), element1.text());
-                        i++;
-                    }
-                    map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
-                    a.add(map);
-                }
+            try {
+                homework(exchange);
+            } catch (Throwable t) {
+                String message = t.getMessage();
+                exchange.sendResponseHeaders(t instanceof StatusException s ? s.getCode() : 500, message.getBytes(StandardCharsets.UTF_8).length);
+                exchange.getResponseBody().write(message.getBytes(StandardCharsets.UTF_8));
+                exchange.close();
+                t.printStackTrace();
             }
-            {
-                Response join = null;
-                try {
-                    join = getResponse(homeworkUrl + "?type=completed");
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
-                }
-                String join1 = join.text().join();
-                Document parse = Jsoup.parse(join1);
-                Element elem = parse.getElementsByClass("table table-stripped table-hover table-condensed").get(0);
-                Element thead = elem.getElementsByTag("thead").get(0);
-                List<String> store = new ArrayList<>();
-                for (Element element : thead.getElementsByTag("tr").get(0).getElementsByTag("th")) {
-                    store.add(element.text());
-                }
-                Element tbody = elem.getElementsByTag("tbody").get(0);
-                for (Element element : tbody.getElementsByTag("tr")) {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("Completed", "Yes");
-                    int i = 0;
-                    for (Element element1 : element.getElementsByTag("td")) {
-                        if (i == 0) {
-                            String a1 = element1.getElementsByTag("a").get(0).attr("data-content");
-                            map.put("Comment", Jsoup.parse(a1).text());
-                        }
-                        map.put(store.get(i), element1.text());
-                        i++;
-                    }
-                    map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
-                    a.add(map);
-                }
-            }
-            exchange.sendResponseHeaders(200, GSON.toJson(a).getBytes(StandardCharsets.UTF_8).length);
-            exchange.getResponseBody().write(GSON.toJson(a).getBytes(StandardCharsets.UTF_8));
-            exchange.close();
-        });
+        }); // to be removed
         server.start();
         System.out.println("Started on " + server.getAddress().toString());
     }
 
-    private static Response getResponse(String timetableUrl) throws IOException, URISyntaxException {
-        var str = Map.<String, List<String>>of("Cookie", List.of());
-        CookieManager.getDefault().put(URI.create(timetableUrl), str);
-        CompletableFuture<Response> timetable = fetch(timetableUrl, str);
+    // https://stackoverflow.com/questions/13592236/parse-a-uri-string-into-name-value-collection
+    private static  Map<String, List<String>> splitQuery(URI url) {
+        if (url.getQuery() == null || "".equals(url.getQuery())) {
+            return Collections.emptyMap();
+        }
+        return Arrays.stream(url.getQuery().split("&"))
+                .map(Main::splitQueryParameter)
+                .collect(Collectors.groupingBy(AbstractMap.SimpleImmutableEntry::getKey, LinkedHashMap::new, mapping(Map.Entry::getValue, toList())));
+    }
+
+    // https://stackoverflow.com/questions/13592236/parse-a-uri-string-into-name-value-collection
+    private static  AbstractMap.SimpleImmutableEntry<String, String> splitQueryParameter(String it) {
+        final int idx = it.indexOf("=");
+        final String key = idx > 0 ? it.substring(0, idx) : it;
+        final String value = idx > 0 && it.length() > idx + 1 ? it.substring(idx + 1) : null;
+        assert value != null;
+        return new AbstractMap.SimpleImmutableEntry<>(
+                URLDecoder.decode(key, StandardCharsets.UTF_8),
+                URLDecoder.decode(value, StandardCharsets.UTF_8)
+        );
+    }
+
+    private static void homework(HttpExchange exchange) throws IOException {
+        System.out.println(exchange);
+        Map<String, List<String>> stringListMap = splitQuery(exchange.getRequestURI());
+        String username = stringListMap.get("username").get(0);
+        String password = stringListMap.get("password").get(0);
+        String prefix = stringListMap.get("sentralPrefix").get(0);
+        SentralCred sentralCred = SentralCred.of(username, password, prefix);
+        String homeworkUrl = sentralCred.getHomeworkUrl();
+        List<Map<String, String>
+                > a = new ArrayList<>();
+        {
+            Response join = null;
+            try {
+                join = getResponse(sentralCred, homeworkUrl);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            String join1 = join.text().join();
+            Document parse = Jsoup.parse(join1);
+            Element elem = parse.getElementsByClass("table table-stripped table-hover table-condensed").get(0);
+            Element thead = elem.getElementsByTag("thead").get(0);
+            List<String> store = new ArrayList<>();
+            for (Element element : thead.getElementsByTag("tr").get(0).getElementsByTag("th")) {
+                store.add(element.text());
+            }
+            Element tbody = elem.getElementsByTag("tbody").get(0);
+            for (Element element : tbody.getElementsByTag("tr")) {
+                Map<String, String> map = new HashMap<>();
+                map.put("Completed", "No");
+                int i = 0;
+                for (Element element1 : element.getElementsByTag("td")) {
+                    if (i == 0) {
+                        String a1 = element1.getElementsByTag("a").get(0).attr("data-content");
+                        map.put("Comment", Jsoup.parse(a1).text());
+                    }
+                    map.put(store.get(i), element1.text());
+                    i++;
+                }
+                map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
+                a.add(map);
+            }
+        }
+        {
+            Response join = null;
+            try {
+                join = getResponse(sentralCred, homeworkUrl + "?type=completed");
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            String join1 = join.text().join();
+            Document parse = Jsoup.parse(join1);
+            Element elem = parse.getElementsByClass("table table-stripped table-hover table-condensed").get(0);
+            Element thead = elem.getElementsByTag("thead").get(0);
+            List<String> store = new ArrayList<>();
+            for (Element element : thead.getElementsByTag("tr").get(0).getElementsByTag("th")) {
+                store.add(element.text());
+            }
+            Element tbody = elem.getElementsByTag("tbody").get(0);
+            for (Element element : tbody.getElementsByTag("tr")) {
+                Map<String, String> map = new HashMap<>();
+                map.put("Completed", "Yes");
+                int i = 0;
+                for (Element element1 : element.getElementsByTag("td")) {
+                    if (i == 0) {
+                        String a1 = element1.getElementsByTag("a").get(0).attr("data-content");
+                        map.put("Comment", Jsoup.parse(a1).text());
+                    }
+                    map.put(store.get(i), element1.text());
+                    i++;
+                }
+                map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
+                a.add(map);
+            }
+        }
+        exchange.sendResponseHeaders(200, GSON.toJson(a).getBytes(StandardCharsets.UTF_8).length);
+        exchange.getResponseBody().write(GSON.toJson(a).getBytes(StandardCharsets.UTF_8));
+        exchange.close();
+    }
+
+    private static Response getResponse(SentralCred cred, String url, int attempts) throws IOException, URISyntaxException {
+        if (attempts >= 3) {
+            throw new StatusException("Failed to login", 403);
+        }
+        CompletableFuture<Response> timetable = cred.getFetch().fetch(url);
         Response response = timetable.join();
-        assert url != null;
-        assert prf != null;
-        if (url.toURI().equals(response.getResponseUri())) {
-            CompletableFuture<Response> fetch = fetch(prf + "portal2/user", "POST", Map.of(
+        if (cred.getLoginUrl().toURI().equals(response.getResponseUri())) {
+            CompletableFuture<Response> fetch = cred.getFetch().fetch(cred.getLoginUrlHook().toString(), "POST", Map.of(
                     "Content-Type", "application/json;charset=UTF-8",
                     "Referer", url.toString()
             ), String.format( """
@@ -166,10 +183,16 @@ public class Main {
                         "remember_username": false,
                         "password": "%s"
                     }
-                    """, args.username, args.password));
-            return getResponse(timetableUrl);
+                    """, cred.getUsername(), cred.getPassword()));
+            return getResponse(cred, url, attempts+1);
+        } else if (!URI.create(url).equals(response.getResponseUri())) {
+            return getResponse(cred, url, attempts+1);
         }
         return response;
+    }
+
+    private static Response getResponse(SentralCred cred, String url) throws IOException, URISyntaxException {
+        return getResponse(cred, url, 0);
     }
 
     public static UUID randomUUID(long co) {
@@ -190,14 +213,5 @@ public class Main {
         for (int i=8; i<16; i++)
             lsb = (lsb << 8) | (data[i] & 0xff);
         return new UUID(msb, lsb);
-    }
-
-    private static final NonStaticFetch nsf = new NonStaticFetch(new CookieManager());
-    private static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers, String body) {
-        return nsf.fetch(url, method, headers, body);
-    }
-
-    private static CompletableFuture<Response> fetch(String url, Map<String, ?> headers) {
-        return fetch(url, "GET", headers, null);
     }
 }

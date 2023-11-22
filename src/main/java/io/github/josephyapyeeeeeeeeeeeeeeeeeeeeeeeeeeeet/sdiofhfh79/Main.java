@@ -29,8 +29,9 @@ import static io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch
 
 public class Main {
     public static void main(String[] args) throws IOException {
+        int port = args.length == 0 ? 8000 : Integer.parseInt(args[0]);
         SentralCred.startGc();
-        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 8000), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
      /* server.createContext("/timetable/cyclical", exchange -> {
             Response response = null;
             try {

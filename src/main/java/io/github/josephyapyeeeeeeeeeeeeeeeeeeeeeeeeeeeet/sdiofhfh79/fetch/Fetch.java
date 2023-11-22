@@ -17,18 +17,22 @@ import java.util.concurrent.CompletableFuture;
 
 public class Fetch {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    @Deprecated
     public static CompletableFuture<Response> fetch(String url) {
         return fetch(url, "GET", new HashMap<>(), null);
     }
 
+    @Deprecated
     public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers) {
         return fetch(url, method, headers, null);
     }
 
+    @Deprecated
     public static CompletableFuture<Response> fetch(String url, Map<String, ?> headers) {
         return fetch(url, "GET", headers, null);
     }
 
+    @Deprecated
     public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers, String body) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -139,6 +143,7 @@ public class Fetch {
         }
     }
 
+    @Deprecated
     public static byte[] readBytesFromInputStream(InputStream inputStream) throws IOException {
         if (inputStream == null) return new byte[0];
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

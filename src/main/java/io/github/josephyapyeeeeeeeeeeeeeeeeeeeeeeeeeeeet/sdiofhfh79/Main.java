@@ -95,9 +95,14 @@ public class Main {
     private static void homework(HttpExchange exchange) throws IOException {
         System.out.println(exchange);
         Map<String, List<String>> stringListMap = splitQuery(exchange.getRequestURI());
-        String username = stringListMap.get("username").get(0);
-        String password = stringListMap.get("password").get(0);
-        String prefix = stringListMap.get("sentralPrefix").get(0);
+        final String username, password, prefix;
+        try {
+            username = stringListMap.get("username").get(0);
+            password = stringListMap.get("password").get(0);
+            prefix = stringListMap.get("sentralPrefix").get(0);
+        } catch (Throwable t) {
+            throw new StatusException("Forbidden", 403);
+        }
         SentralCred sentralCred = SentralCred.of(username, password, prefix);
         String homeworkUrl = sentralCred.getHomeworkUrl();
         List<Map<String, String>

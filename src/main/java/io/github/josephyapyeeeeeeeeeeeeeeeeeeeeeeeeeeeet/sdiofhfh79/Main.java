@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import static io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.Fetch.*;
 
 public class Main {
-    public static void main(String... argv) throws IOException {
+    public static void main(String[] args) throws IOException {
         SentralCred.startGc();
         HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 8000), 0);
      /* server.createContext("/timetable/cyclical", exchange -> {

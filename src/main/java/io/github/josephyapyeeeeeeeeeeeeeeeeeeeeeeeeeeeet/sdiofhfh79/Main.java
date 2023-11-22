@@ -1,32 +1,36 @@
 package io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.NonStaticFetch;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.NodeFilter;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.Fetch.*;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 
 public class Main {
     public static void main(String... argv) throws IOException {
         SentralCred.startGc();
-        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 5383), 0);
+        HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 8000), 0);
      /* server.createContext("/timetable/cyclical", exchange -> {
             Response response = null;
             try {
@@ -72,7 +76,7 @@ public class Main {
         }
         return Arrays.stream(url.getQuery().split("&"))
                 .map(Main::splitQueryParameter)
-                .collect(Collectors.groupingBy(AbstractMap.SimpleImmutableEntry::getKey, LinkedHashMap::new, mapping(Map.Entry::getValue, toList())));
+                .collect(Collectors.groupingBy(AbstractMap.SimpleImmutableEntry::getKey, LinkedHashMap::new, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
     }
 
     // https://stackoverflow.com/questions/13592236/parse-a-uri-string-into-name-value-collection

@@ -31,7 +31,6 @@ dependencies {
     shadow implementation(group: 'commons-io', name: 'commons-io', version: '2.14.0')
 
     shadow(implementation 'org.jsoup:jsoup:1.16.1')
-    shadow(implementation "org.jcommander:jcommander:1.83")
 
 }
 

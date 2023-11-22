@@ -17,72 +17,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class Fetch {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    @Deprecated
-    public static CompletableFuture<Response> fetch(String url) {
-        return fetch(url, "GET", new HashMap<>(), null);
-    }
 
-    @Deprecated
-    public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers) {
-        return fetch(url, method, headers, null);
-    }
-
-    @Deprecated
-    public static CompletableFuture<Response> fetch(String url, Map<String, ?> headers) {
-        return fetch(url, "GET", headers, null);
-    }
-
-    @Deprecated
-    public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers, String body) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                String decodedURL = URLDecoder.decode(url, StandardCharsets.UTF_8);
-                URL urld = new URL(decodedURL);
-                URI uri = new URI(urld.getProtocol(), urld.getUserInfo(), urld.getHost(), urld.getPort(), urld.getPath(), urld.getQuery(), urld.getRef());
-                String decodedURLAsString = uri.toASCIIString();
-                URL apiUrl = new URL(decodedURLAsString);
-                HttpURLConnection connection = (HttpURLConnection) apiUrl.openConnection();
-                connection.setRequestMethod(method);
-                System.out.println(connection.getInstanceFollowRedirects());
-                connection.setInstanceFollowRedirects(true);
-
-                if (headers != null) {
-                    for (Map.Entry<String, ?> entry : headers.entrySet()) {
-                        if (entry.getValue() instanceof List<?> list) {
-                            for (Object o : list) {
-                                connection.addRequestProperty(entry.getKey(), (String) o);
-                            }
-                        } else if (entry.getValue() instanceof String str) {
-                            connection.setRequestProperty(entry.getKey(), str);
-                        }
-
-                    }
-                }
-
-                if (body != null && !body.isEmpty()) {
-                    connection.setDoOutput(true);
-                    byte[] requestBodyBytes = body.getBytes(StandardCharsets.UTF_8);
-                    connection.getOutputStream().write(requestBodyBytes);
-                }
-
-                int responseCode = connection.getResponseCode();
-
-                byte[] bytes;
-                if (responseCode >= 200 && responseCode < 300) {
-                    bytes = readBytesFromInputStream(connection.getInputStream());
-                } else {
-                    bytes = readBytesFromInputStream(connection.getErrorStream());
-                }
-
-                Response fetchResponse = new Response(responseCode, bytes, connection.getHeaderFields(), connection.getURL().toURI());
-                System.out.println(connection.getURL());
-                connection.disconnect();
-
-                return fetchResponse;
-            } catch (IOException | URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-        });
+    public static NonStaticFetch create() {
+        return new NonStaticFetch(new CookieManager());
     }
 
     public static class Response {

@@ -3,6 +3,7 @@ package io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.sun.net.httpserver.HttpServer;
+import io.github.josephyapyeeeeeeeeeeeeeeeeeeeeeeeeeeeet.sdiofhfh79.fetch.NonStaticFetch;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -154,7 +155,7 @@ public class Main {
         Response response = timetable.join();
         assert url != null;
         assert prf != null;
-        if (url.toURI().equals(response.getConnection().getURL().toURI())) {
+        if (url.toURI().equals(response.getResponseUri())) {
             CompletableFuture<Response> fetch = fetch(prf + "portal2/user", "POST", Map.of(
                     "Content-Type", "application/json;charset=UTF-8",
                     "Referer", url.toString()
@@ -189,5 +190,14 @@ public class Main {
         for (int i=8; i<16; i++)
             lsb = (lsb << 8) | (data[i] & 0xff);
         return new UUID(msb, lsb);
+    }
+
+    private static final NonStaticFetch nsf = new NonStaticFetch(new CookieManager());
+    private static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers, String body) {
+        return nsf.fetch(url, method, headers, body);
+    }
+
+    private static CompletableFuture<Response> fetch(String url, Map<String, ?> headers) {
+        return fetch(url, "GET", headers, null);
     }
 }

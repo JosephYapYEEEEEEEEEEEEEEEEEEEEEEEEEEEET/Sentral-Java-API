@@ -11,6 +11,7 @@ import org.jsoup.select.NodeFilter;
 import java.io.IOException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -102,6 +103,7 @@ public class Main {
                         map.put(store.get(i), element1.text());
                         i++;
                     }
+                    map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
                     a.add(map);
                 }
             }
@@ -133,6 +135,7 @@ public class Main {
                         map.put(store.get(i), element1.text());
                         i++;
                     }
+                    map.put("UUID", "" + randomUUID((map.get("Title") + map.get("Due Date")).hashCode()));
                     a.add(map);
                 }
             }
@@ -166,5 +169,25 @@ public class Main {
             return getResponse(timetableUrl);
         }
         return response;
+    }
+
+    public static UUID randomUUID(long co) {
+        Random ng = new Random(co);
+
+        byte[] randomBytes = new byte[16];
+        ng.nextBytes(randomBytes);
+        randomBytes[6]  &= 0x0f;  /* clear version        */
+        randomBytes[6]  |= 0x40;  /* set to version 4     */
+        randomBytes[8]  &= 0x3f;  /* clear variant        */
+        randomBytes[8]  |= 0x80;  /* set to IETF variant  */
+        long msb = 0;
+        long lsb = 0;
+        byte[] data = randomBytes;
+        assert data.length == 16 : "data must be 16 bytes in length";
+        for (int i=0; i<8; i++)
+            msb = (msb << 8) | (data[i] & 0xff);
+        for (int i=8; i<16; i++)
+            lsb = (lsb << 8) | (data[i] & 0xff);
+        return new UUID(msb, lsb);
     }
 }

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 public class Fetch {
@@ -20,15 +21,15 @@ public class Fetch {
         return fetch(url, "GET", new HashMap<>(), null);
     }
 
-    public static CompletableFuture<Response> fetch(String url, String method, Map<String, String> headers) {
+    public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers) {
         return fetch(url, method, headers, null);
     }
 
-    public static CompletableFuture<Response> fetch(String url, Map<String, String> headers) {
+    public static CompletableFuture<Response> fetch(String url, Map<String, ?> headers) {
         return fetch(url, "GET", headers, null);
     }
 
-    public static CompletableFuture<Response> fetch(String url, String method, Map<String, String> headers, String body) {
+    public static CompletableFuture<Response> fetch(String url, String method, Map<String, ?> headers, String body) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String decodedURL = URLDecoder.decode(url, StandardCharsets.UTF_8);
@@ -42,8 +43,15 @@ public class Fetch {
                 connection.setInstanceFollowRedirects(true);
 
                 if (headers != null) {
-                    for (Map.Entry<String, String> entry : headers.entrySet()) {
-                        connection.setRequestProperty(entry.getKey(), entry.getValue());
+                    for (Map.Entry<String, ?> entry : headers.entrySet()) {
+                        if (entry.getValue() instanceof List<?> list) {
+                            for (Object o : list) {
+                                connection.addRequestProperty(entry.getKey(), (String) o);
+                            }
+                        } else if (entry.getValue() instanceof String str) {
+                            connection.setRequestProperty(entry.getKey(), str);
+                        }
+
                     }
                 }
 
@@ -62,7 +70,7 @@ public class Fetch {
                     bytes = readBytesFromInputStream(connection.getErrorStream());
                 }
 
-                Response fetchResponse = new Response(responseCode, bytes, connection.getHeaderFields());
+                Response fetchResponse = new Response(responseCode, bytes, connection.getHeaderFields(), connection);
                 System.out.println(connection.getURL());
                 connection.disconnect();
 
@@ -78,14 +86,21 @@ public class Fetch {
         private final byte[] bytes;
         private final Map<String, List<String>> responseHeaders;
 
-        public Response(int status, byte[] bytes, Map<String, List<String>> responseHeaders) {
+        private final HttpURLConnection connection;
+
+        public Response(int status, byte[] bytes, Map<String, List<String>> responseHeaders, HttpURLConnection connection) {
             this.status = status;
             this.bytes = bytes;
             this.responseHeaders = responseHeaders;
+            this.connection = connection;
         }
 
         public int getStatus() {
             return status;
+        }
+
+        public HttpURLConnection getConnection() {
+            return connection;
         }
 
         public Map<String, List<String>> responseHeaders() {

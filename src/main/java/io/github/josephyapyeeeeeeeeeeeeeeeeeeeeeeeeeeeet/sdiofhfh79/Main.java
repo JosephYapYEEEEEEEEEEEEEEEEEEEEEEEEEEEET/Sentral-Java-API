@@ -50,7 +50,7 @@ public class Main {
         String homeworkUrl = "https://" + args.sentralId + ".sentral.com.au/portal/dashboard/homework";
         String timetableUrl = "https://" + args.sentralId + ".sentral.com.au/portal/timetable/mytimetable";
         HttpServer server = HttpServer.create(new InetSocketAddress("localhost", 5383), 0);
-        server.createContext("/timetable/cyclical", exchange -> {
+     /* server.createContext("/timetable/cyclical", exchange -> {
             Response response = null;
             try {
                 response = getResponse(timetableUrl);
@@ -73,7 +73,7 @@ public class Main {
             exchange.getResponseBody().write(days.toString().getBytes());
             exchange.close();
         });
-        server.createContext("/homework", exchange -> {
+     */ server.createContext("/homework", exchange -> {
             List<Map<String, String>
                     > a = new ArrayList<>();
             {
